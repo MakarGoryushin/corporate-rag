@@ -1,0 +1,46 @@
+﻿# Secrets
+.env
+
+# Virtual environments
+.venv/
+.venv312/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+
+# Local models
+models/
+*.gguf
+*.safetensors
+
+# User documents
+data/raw/
+data/archive/
+
+# Local databases and volumes
+qdrant_storage/
+qdrant_data/
+
+# Temporary uploads
+*.upload
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local Qdrant persistence
+storage/
+
+# Unrelated root-level archives/documents
+/*.zip
+/*.pdf

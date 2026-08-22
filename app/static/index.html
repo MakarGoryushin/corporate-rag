@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Корпоративная база знаний</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #f3f5f9;
+            color: #182033;
+        }
+
+        .container {
+            width: min(900px, calc(100% - 32px));
+            margin: 40px auto;
+        }
+
+        header {
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #637083;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 30px rgba(20, 35, 60, 0.08);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 110px;
+            padding: 14px;
+            resize: vertical;
+            border: 1px solid #cbd3df;
+            border-radius: 10px;
+            font: inherit;
+        }
+
+        textarea:focus {
+            outline: 2px solid #4877ee;
+            border-color: transparent;
+        }
+
+        button {
+            margin-top: 12px;
+            padding: 12px 22px;
+            border: 0;
+            border-radius: 10px;
+            background: #315ed4;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .status {
+            margin-top: 14px;
+            color: #637083;
+        }
+
+        .answer {
+            display: none;
+            margin-top: 24px;
+        }
+
+        .answer-text {
+            padding: 18px;
+            border-left: 4px solid #315ed4;
+            border-radius: 8px;
+            background: #f6f8ff;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .sources {
+            margin-top: 22px;
+        }
+
+        .source {
+            margin-top: 12px;
+            padding: 16px;
+            border: 1px solid #dfe4ec;
+            border-radius: 10px;
+        }
+
+        .source-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .source-score {
+            color: #315ed4;
+            white-space: nowrap;
+        }
+
+        .source-text {
+            color: #4d596b;
+            line-height: 1.5;
+        }
+
+        .admin-panel {
+            margin-bottom: 28px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #dfe4ec;
+        }
+
+        .admin-panel h2 {
+            margin-top: 0;
+        }
+
+        .file-input {
+            display: block;
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px;
+            border: 1px dashed #9aa7ba;
+            border-radius: 10px;
+            background: #f8faff;
+        }
+
+        .upload-result {
+            margin-top: 14px;
+            line-height: 1.5;
+        }
+
+        .document-summary {
+            margin-top: 22px;
+            font-weight: bold;
+        }
+
+        .document-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .document-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 12px 14px;
+            border: 1px solid #dfe4ec;
+            border-radius: 10px;
+            background: #fafbfc;
+        }
+
+        .document-name {
+            overflow-wrap: anywhere;
+        }
+
+        .document-meta {
+            color: #637083;
+            white-space: nowrap;
+        }
+
+        .document-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .delete-button {
+            margin: 0;
+            padding: 7px 12px;
+            background: #b42318;
+            font-size: 14px;
+        }
+
+        .delete-button:hover {
+            background: #8f1c13;
+        }
+
+        .error {
+            color: #b42318;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <header>
+        <h1>Корпоративная база знаний</h1>
+        <div class="subtitle">
+            Ответы формируются локально на основе загруженных документов
+        </div>
+    </header>
+
+    <main class="panel">
+
+        <section class="admin-panel">
+            <h2>Документы базы знаний</h2>
+
+            <div class="subtitle">
+                Загрузите новые документы. Уже проиндексированные
+                файлы повторно добавляться не будут.
+            </div>
+
+            <input
+                id="adminKey"
+                class="file-input"
+                type="password"
+                placeholder="Административный ключ"
+                autocomplete="current-password"
+            >
+
+            <input
+                id="documentFiles"
+                class="file-input"
+                type="file"
+                multiple
+                accept=".txt,.pdf,.doc,.docx"
+            >
+
+            <button id="uploadButton" type="button">
+                Загрузить документы
+            </button>
+
+            <div
+                id="uploadResult"
+                class="upload-result"
+            ></div>
+
+            <div
+                id="documentSummary"
+                class="document-summary"
+            ></div>
+
+            <div
+                id="documentList"
+                class="document-list"
+            ></div>
+        </section>
+
+        <label for="question">
+            <strong>Введите вопрос</strong>
+        </label>
+
+        <textarea
+            id="question"
+            placeholder="Например: какие требования предъявляются к корпоративным паролям?"
+        ></textarea>
+
+        <button id="askButton" type="button">
+            Найти ответ
+        </button>
+
+        <div id="status" class="status"></div>
+
+        <section id="answerBlock" class="answer">
+            <h2>Ответ</h2>
+            <div id="answerText" class="answer-text"></div>
+
+            <div id="sourcesBlock" class="sources">
+                <h2>Источники</h2>
+                <div id="sourcesList"></div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    const adminKeyInput =
+        document.getElementById("adminKey");
+
+    adminKeyInput.value =
+        sessionStorage.getItem("adminKey") || "";
+
+    adminKeyInput.addEventListener(
+        "input",
+        () => {
+            sessionStorage.setItem(
+                "adminKey",
+                adminKeyInput.value
+            );
+        }
+    );
+    const documentFiles = document.getElementById("documentFiles");
+    const uploadButton = document.getElementById("uploadButton");
+    const uploadResult = document.getElementById("uploadResult");
+    const documentSummary = document.getElementById("documentSummary");
+    const documentList = document.getElementById("documentList");
+    const questionInput = document.getElementById("question");
+    const askButton = document.getElementById("askButton");
+    const statusElement = document.getElementById("status");
+    const answerBlock = document.getElementById("answerBlock");
+    const answerText = document.getElementById("answerText");
+    const sourcesBlock = document.getElementById("sourcesBlock");
+    const sourcesList = document.getElementById("sourcesList");
+
+    async function loadDocuments() {
+        documentSummary.textContent =
+            "Загружаю список документов…";
+        documentSummary.className = "document-summary";
+        documentList.replaceChildren();
+
+        try {
+            const response = await fetch("/documents");
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail ||
+                    "Не удалось получить документы"
+                );
+            }
+
+            const totalChunks = data.documents.reduce(
+                (sum, itemData) => {
+                    return sum + itemData.chunks;
+                },
+                0
+            );
+
+            documentSummary.textContent =
+                `Документов: ${data.total}. ` +
+                `Чанков: ${totalChunks}.`;
+
+            data.documents.forEach(itemData => {
+                const item =
+                    document.createElement("div");
+                item.className = "document-item";
+
+                const name =
+                    document.createElement("span");
+                name.className = "document-name";
+                name.textContent =
+                    itemData.file_name || "Документ";
+
+                const actions =
+                    document.createElement("div");
+                actions.className = "document-actions";
+
+                const meta =
+                    document.createElement("span");
+                meta.className = "document-meta";
+                meta.textContent =
+                    `${itemData.chunks} чанков`;
+
+                const deleteButton =
+                    document.createElement("button");
+                deleteButton.type = "button";
+                deleteButton.className = "delete-button";
+                deleteButton.textContent = "Удалить";
+
+                deleteButton.addEventListener(
+                    "click",
+                    () => removeDocument(
+                        itemData.document_id,
+                        itemData.file_name
+                    )
+                );
+
+                actions.append(meta, deleteButton);
+                item.append(name, actions);
+                documentList.append(item);
+            });
+
+        } catch (error) {
+            documentSummary.textContent = error.message;
+            documentSummary.className =
+                "document-summary error";
+        }
+    }
+
+    async function removeDocument(
+        documentId,
+        fileName
+    ) {
+        const adminKey =
+            adminKeyInput.value.trim();
+
+        if (!adminKey) {
+            uploadResult.textContent =
+                "Введите административный ключ.";
+            uploadResult.className =
+                "upload-result error";
+            return;
+        }
+        const confirmed = window.confirm(
+            `Удалить «${fileName}» из базы знаний?\n\n` +
+            "Исходный файл останется в data/raw."
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        documentSummary.textContent =
+            `Удаляю ${fileName}…`;
+        documentSummary.className =
+            "document-summary";
+
+        try {
+            const response = await fetch(
+                `/documents/${encodeURIComponent(documentId)}`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        "X-Admin-Key": adminKey
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail ||
+                    "Не удалось удалить документ"
+                );
+            }
+
+            uploadResult.textContent =
+                `Документ «${fileName}» удалён ` +
+                "из базы знаний.";
+            uploadResult.className = "upload-result";
+
+            await loadDocuments();
+
+        } catch (error) {
+            uploadResult.textContent = error.message;
+            uploadResult.className =
+                "upload-result error";
+        }
+    }
+
+    async function uploadDocuments() {
+        const adminKey =
+            adminKeyInput.value.trim();
+
+        if (!adminKey) {
+            uploadResult.textContent =
+                "Введите административный ключ.";
+            uploadResult.className =
+                "upload-result error";
+            return;
+        }
+
+        const files = Array.from(documentFiles.files);
+
+        if (files.length === 0) {
+            uploadResult.textContent =
+                "Сначала выберите документы.";
+            uploadResult.className =
+                "upload-result error";
+            return;
+        }
+
+        const formData = new FormData();
+
+        files.forEach(file => {
+            formData.append("files", file);
+        });
+
+        uploadButton.disabled = true;
+        uploadResult.textContent =
+            "Загружаю и индексирую документы…";
+        uploadResult.className = "upload-result";
+
+        try {
+            const response = await fetch(
+                "/documents/upload",
+                {
+                    method: "POST",
+                    headers: {
+                        "X-Admin-Key": adminKey
+                    },
+                    body: formData
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.detail || "Ошибка загрузки"
+                );
+            }
+
+            const messages = [];
+
+            if (data.uploaded > 0) {
+                messages.push(
+                    `Добавлено документов: ${data.uploaded}.`
+                );
+            }
+
+            if (data.skipped > 0) {
+                messages.push(
+                    `Пропущено дубликатов: ${data.skipped}.`
+                );
+            }
+
+            if (data.chunks > 0) {
+                messages.push(
+                    `Создано чанков: ${data.chunks}.`
+                );
+            }
+
+            if (data.errors.length > 0) {
+                messages.push(
+                    `Ошибок: ${data.errors.length}.`
+                );
+            }
+
+            uploadResult.textContent =
+                messages.join(" ") || "Обработка завершена.";
+
+            documentFiles.value = "";
+            await loadDocuments();
+
+        } catch (error) {
+            uploadResult.textContent = error.message;
+            uploadResult.className =
+                "upload-result error";
+        } finally {
+            uploadButton.disabled = false;
+        }
+    }
+
+    async function askQuestion() {
+        const query = questionInput.value.trim();
+
+        if (!query) {
+            statusElement.textContent = "Введите вопрос.";
+            statusElement.className = "status error";
+            return;
+        }
+
+        askButton.disabled = true;
+        statusElement.textContent =
+            "Ищу информацию и формирую ответ. Это может занять некоторое время…";
+        statusElement.className = "status";
+        answerBlock.style.display = "none";
+        sourcesList.replaceChildren();
+
+        try {
+            const response = await fetch("/ask", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    query: query,
+                    limit: 5
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Ошибка сервера");
+            }
+
+            answerText.textContent = data.answer;
+            answerBlock.style.display = "block";
+
+            if (data.sources && data.sources.length > 0) {
+                sourcesBlock.style.display = "block";
+
+                data.sources.forEach((source, index) => {
+                    const card = document.createElement("article");
+                    card.className = "source";
+
+                    const header = document.createElement("div");
+                    header.className = "source-header";
+
+                    const name = document.createElement("span");
+                    name.textContent =
+                        `${index + 1}. ${source.file_name || "Документ"}`;
+
+                    const score = document.createElement("span");
+                    score.className = "source-score";
+                    score.textContent =
+                        `${(source.score * 100).toFixed(1)}%`;
+
+                    const text = document.createElement("div");
+                    text.className = "source-text";
+                    text.textContent = source.text;
+
+                    header.append(name, score);
+                    card.append(header, text);
+                    sourcesList.append(card);
+                });
+            } else {
+                sourcesBlock.style.display = "none";
+            }
+
+            statusElement.textContent = "";
+        } catch (error) {
+            statusElement.textContent = error.message;
+            statusElement.className = "status error";
+        } finally {
+            askButton.disabled = false;
+        }
+    }
+
+    askButton.addEventListener("click", askQuestion);
+
+    questionInput.addEventListener("keydown", event => {
+        if (event.ctrlKey && event.key === "Enter") {
+            askQuestion();
+        }
+    });
+
+    uploadButton.addEventListener(
+        "click",
+        uploadDocuments
+    );
+
+    loadDocuments();
+
+</script>
+</body>
+</html>
